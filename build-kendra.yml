@@ -1,0 +1,120 @@
+Outputs:
+  S3BucketName:
+    Value: !Ref KendraS3Bucket
+  DataSourceId:
+    Value: !Ref KendraDataSource
+  KendraS3Arn:
+    Value: !GetAtt KendraS3AccessRole.Arn 
+
+Resources:
+  KendraS3Bucket:
+    Type: AWS::S3::Bucket
+
+  KendraRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: kendra.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: cloudwatch-putmetricdata
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - cloudwatch:PutMetricData
+            Resource: '*'
+            Condition:
+              StringEquals: 
+                "cloudwatch:namespace": "AWS/Kendra"
+      - PolicyName: cloudwatch-describeloggroups
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - logs:DescribeLogGroups
+            Resource: '*'
+      - PolicyName: cloudwatch-createloggroup
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: 
+              - logs:CreateLogGroup
+            Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/kendra/*"
+      - PolicyName: cloudwatch-putevents
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - logs:DescribeLogStreams
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/kendra/*:log-stream:*"
+
+  KendraS3AccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: kendra.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: s3-getobject
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${KendraS3Bucket}/*"
+      - PolicyName: s3-listbucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: 
+              - s3:ListBucket
+            Resource: !Sub "arn:aws:s3:::${KendraS3Bucket}"
+      - PolicyName: s3-put
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - kendra:BatchPutDocument
+              - kendra:BatchDeleteDocument
+            Resource: !Sub "arn:aws:kendra:${AWS::Region}:${AWS::AccountId}:index/*"
+      
+
+
+
+  KendraIndex:
+    Type: AWS::Kendra::Index
+    Properties:
+      Edition: DEVELOPER_EDITION
+      Name: !Sub "${AWS::StackName}-demo-index"
+      RoleArn: !GetAtt KendraRole.Arn
+
+  KendraDataSource:
+    Type: AWS::Kendra::DataSource
+    Properties:
+      DataSourceConfiguration: 
+        S3Configuration:
+          BucketName: !Ref KendraS3Bucket
+      IndexId: !Ref KendraIndex
+      Name: !Sub "${AWS::StackName}-demo-data"
+      RoleArn: !GetAtt KendraS3AccessRole.Arn
+      Type: S3

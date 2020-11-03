@@ -1,0 +1,22 @@
+Parameters:
+  RoleArn:
+    Type: String
+    Description: The RoleArn to use for the FAQ
+  KendraIndex:
+    Type: String
+    Description: The KendraIndex to use
+  KendraS3Bucket:
+    Type: String
+    Description: The S3 Bucket to use
+
+Resources:
+  KendraFAQ:
+      Type: AWS::Kendra::Faq
+      Properties:
+        IndexId: !Ref KendraIndex
+        FileFormat: CSV
+        Name: !Sub "${AWS::StackName}-demo-faq"
+        RoleArn: !Ref RoleArn
+        S3Path: 
+          Bucket: !Ref KendraS3Bucket
+          Key: "faq/sagemaker_faq.csv"
