@@ -114,6 +114,8 @@ Resources:
       DataSourceConfiguration: 
         S3Configuration:
           BucketName: !Ref KendraS3Bucket
+          DocumentsMetadataConfiguration:
+            S3Prefix: "content/metadata/"
       IndexId: !Ref KendraIndex
       Name: !Sub "${AWS::StackName}-demo-data"
       RoleArn: !GetAtt KendraS3AccessRole.Arn
