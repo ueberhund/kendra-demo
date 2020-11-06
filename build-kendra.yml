@@ -107,6 +107,12 @@ Resources:
       Edition: DEVELOPER_EDITION
       Name: !Sub "${AWS::StackName}-demo-index"
       RoleArn: !GetAtt KendraRole.Arn
+      DocumentMetadataConfigurations:
+        - Name: tags
+          Type: STRING_LIST_VALUE
+          Search: 
+            Facetable: true
+            Searchable: true
 
   KendraDataSource:
     Type: AWS::Kendra::DataSource
@@ -114,8 +120,8 @@ Resources:
       DataSourceConfiguration: 
         S3Configuration:
           BucketName: !Ref KendraS3Bucket
-          DocumentsMetadataConfiguration:
-            S3Prefix: "content/metadata/"
+          InclusionPrefixes:
+            - "content"
       IndexId: !Ref KendraIndex
       Name: !Sub "${AWS::StackName}-demo-data"
       RoleArn: !GetAtt KendraS3AccessRole.Arn
